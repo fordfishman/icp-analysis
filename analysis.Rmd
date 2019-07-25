@@ -27,15 +27,15 @@ suppressPackageStartupMessages(library(xlsx))
 This next segment is the computational stand-in for the user picking files and changing default settings in the actual app. It's in the standalone script, but it's not a part of the Shiny app.
 
 ```{r}
-setwd("~/Documents/Geology_program") # Set working directory
-file <- "Field Foams 28,38,39,75,176,186,191,195,212.xlsx"
+path = "~/Documents/Geology_program/" 
+file <- "/Users/fordfishman/Documents/Geology_program/Field Foams 4,12,13,14 rerun,145,147,156,157,158,160,161.xlsx"
 limits <- "/Users/fordfishman/Documents/Geology_program/MDL-LOQ limits.xlsx"
-weights <- "Masses of dried field foams (mod 1-06.27.19).xlsx"
+weights <- "/Users/fordfishman/Documents/Geology_program/Masses of dried field foams (mod 1-06.27.19).xlsx"
 rsquare_cutoff <- 0.94
 sample_start <- "A"
 sample_end <- "C"
-output <- "IPC_analysis.xlsx"
-load("IPC-analysis-app/data/IPC_data.Rdata") # This data includes background foam concentrations and weights
+output <- "/Users/fordfishman/Documents/Geology_program/IPC_analysis.xlsx"
+load("/Users/fordfishman/Documents/Geology_program/IPC-analysis-app/data/IPC_data.Rdata") # This data includes background foam concentrations and weights
 ```
 
 The following code imports the main data sheet ("Conc. in Calib Units") and makes sure it is formatted correctly. `gsub()` searches a given set of characters and replaces specified characters with other specified characters.
@@ -80,7 +80,7 @@ important_Y <- subset(field_foams_concentrations_df,
 
 The drift correction is done by making one or multiple linear regressions. Using the important Y values (dependent variable) and the sample number (independent variable), the program creates a linear model. The slope of this model represents the drift of the concentrations. 
 
-As the machine's drift behavior can change throughout a run, one single model may poorly represent the drift behavior. Using the r-squared listed above as a mininum r-squared cutoff value for a given model, the program will subset from the important_Y dataset until it can make a model with an r-square at or exceeding the minimum. Y values at the end of the run will be removed first. The minimum r-squared value can be set at 1, requiring a perfect fit. 
+As the machine's drift behavior can change throughout a run, one single model may poorly represent the drift behavior. Using the r-squared listed above as a minimum r-squared cutoff value for a given model, the program will subset from the important_Y dataset until it can make a model with an r-square at or exceeding the minimum. Y values at the end of the run will be removed first. The minimum r-squared value can be set at 1, requiring a perfect fit. 
 
 For data points not used, this same approach is repeated until a model is found with an appropriate r-squared. This means that any given run can have anywhere from 1 to $n$-1 models representing the drift behavior, where $n$ is the number of IPC-500 samples. 
 
@@ -164,7 +164,7 @@ Now that we have equations modeling the drift behavior, we can predict the level
 ```{r}
 drift_multiplier <- c()
 
-# Iteratres through and gives the correct drift multiplier to the correct sample
+# Iterates through and gives the correct drift multiplier to the correct sample
 for (i in 1:length(functions_list)) {
   for (num in functions_list[i]){
     drift_multiplier <- c(drift_multiplier, get(names(functions_list[i]))(num))
@@ -172,7 +172,7 @@ for (i in 1:length(functions_list)) {
 }
 ```
 
-The drift correction is made by multiplying the concentrations by the inverse of the drift multipler found above that is unique for each sample. The drift corrected data is stored in the dataframe `drift_corrections`.
+The drift correction is made by multiplying the concentrations by the inverse of the drift multiplier found above that is unique for each sample. The drift corrected data is stored in the dataframe `drift_corrections`.
 
 ```{r}
 # Reorganization of dataframe
@@ -187,7 +187,7 @@ for (i in names(field_foams_concentrations_df)) {
 
 ## CCB Correction
 
-Now that drift has been accounted for, the next, much simpler step is to substract out the blank concentrations as determined from the CCB samples. The mean of each analyte in the CCB samples is subtracted from the drift-corrected values, which is stored in the dataframe `drift_corrections`.
+Now that drift has been accounted for, the next, much simpler step is to subtract out the blank concentrations as determined from the CCB samples. The mean of each analyte in the CCB samples is subtracted from the drift-corrected values, which is stored in the dataframe `drift_corrections`.
 
 ```{r}
 # Create a separate dataframe with just CCB data
@@ -261,7 +261,7 @@ quality <-  function(vec, comp, lower, upper){
 }
 ```
 
-`data_range` is defined as the the range of columns in `corrected_data` that actually contains analyte data.
+`data_range` is defined as the range of columns in `corrected_data` that actually contains analyte data.
 
 ```{r}
 # Column number where actual concentration data begins
@@ -379,7 +379,7 @@ for (i in 1:nrow(corrected_data)){
 }
 ```
 
-`QA_QC` is then converted into a dataframe to easily convert it into an Excel sheet later on. But before the dataframe is finalized, the three tests with multiple samples have to removed from the rest of test results.
+`QA_QC` is then converted into a dataframe to easily convert it into an Excel sheet later on. But before the dataframe is finalized, the three tests with multiple samples have to be removed from the rest of test results.
 
 ```{r}
 # Finalizing the QA/QC dataframe
@@ -514,7 +514,7 @@ bg2_norm <- bg2_conc/bg2_weights$`Bhalfweight(g)`
 bg3_norm <- bg3_conc/bg3_weights$`Bhalfweight(g)`
 ```
 
-For any given sample, each analyte concentation mean has to compared to background foam concentration mean in an independent samples 1-tailed t-test, where we we are testing the hypothesis that the mean concentration in the sample is greater than the mean concentration in the background foam. The custom function `sig_test()` lets you run all of the necessary t-tests for each analyte and returns each p-value in a vector. If a sample only has one replicate, a t-test will not work, and a p-value of 1 will be returned. 
+For any given sample, each analyte concentration mean has to compared to background foam concentration mean in an independent samples 1-tailed t-test, where we are testing the hypothesis that the mean concentration in the sample is greater than the mean concentration in the background foam. The custom function `sig_test()` lets you run all of the necessary t-tests for each analyte and returns each p-value in a vector. If a sample only has one replicate, a t-test will not work, and a p-value of 1 will be returned. 
 
 Its input `sample_df` is a subset of the weight-normalized sample concentrations dataframe only containing one sample, and `background_df` is the corresponding weight-normalized background concentrations.
 
@@ -556,7 +556,7 @@ final_label <- function(signif_v, nondetect, only_detect, give_value, final_conc
 }
 ```
 
-Here's where those functions get put to use: in a monster for-loop. Subsets are made only containing a single sample from the `sample_norm` (weight-normalized) and `sample-df` (non-normalized concentrations) dataframes. The non-normalized concentrations (`conc_mean`) are used to determine the labeling discussed above via boolean vectors, besides the signficance vector.
+Here's where those functions get put to use: in a monster for-loop. Subsets are made only containing a single sample from the `sample_norm` (weight-normalized) and `sample-df` (non-normalized concentrations) dataframes. The non-normalized concentrations (`conc_mean`) are used to determine the labeling discussed above via boolean vectors, besides the significance vector.
 
 The background foam values compared to depend on the sample number, as described above. The non-normalized background concentration mean is then subtracted from the sample mean. This can be negative if sample concentration mean is lower than the background concentration. The ratio of A side of the foam's weight to the total foam weight is then incorporated to find the final concentration. The error propagation takes into account each of these. 
 
