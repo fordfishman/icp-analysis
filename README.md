@@ -61,7 +61,9 @@ colnames(field_foams_concentrations_df) <- gsub("As193\\.69\\(", "As193\\.696\\(
 Drift Correction
 ----------------
 
-Analyte values drift as the run continues. Therefore, correcting this drift is the first matter of business. The internal standards sheet is first extracted and edited. This sheet contains sample numbers and corresponding yttrium concentrations (`Y_levels`). The internal standards levels used for drift correction only correspond to the IPC-500 samples. `important_Y` contains this subset of Y concentrations.
+Analyte values drift as the run continues. Therefore, correcting this drift is the first matter of business. The internal standards sheet is first extracted and edited. This sheet contains sample numbers and corresponding yttrium concentrations (`Y_levels`). 
+
+The internal standards levels used for drift correction only correspond to the IPC-500 samples. `important_Y` contains this subset of Y concentrations.
 
 ``` r
 # Saves sheet with Y standard information
@@ -80,7 +82,11 @@ important_Y <- subset(field_foams_concentrations_df,
                       select = c(Sample, Y_levels))
 ```
 
-The drift correction is done by making one or multiple linear regressions. Using the important Y values (dependent variable) and the sample number (independent variable), the program creates a linear model. The slope of this model represents the drift of the concentrations. As the machine's drift behavior can change throughout a run, one single model may poorly represent the drift behavior. Using the r-squared listed above as a minimum r-squared cutoff value for a given model, the program will subset from the important\_Y dataset until it can make a model with an r-square at or exceeding the minimum. Y values at the end of the run will be removed first. The minimum r-squared value can be set at 1, requiring a perfect fit. For data points not used, this same approach is repeated until a model is found with an appropriate r-squared. This means that any given run can have anywhere from 1 to *n*-1 models representing the drift behavior, where *n* is the number of IPC-500 samples. As *n* is not constant from run to run, the max number of regressions necessary in a given run is also variable. The next segment of code simply makes names for variables representing the group of important Y values and their corresponding linear models (group1, lm1; group2, lm2; ...; group(n-1), lm(n-1)).
+The drift correction is done by making one or multiple linear regressions. Using the important Y values (dependent variable) and the sample number (independent variable), the program creates a linear model. The slope of this model represents the drift of the concentrations. As the machine's drift behavior can change throughout a run, one single model may poorly represent the drift behavior. 
+
+Using the r-squared listed above as a minimum r-squared cutoff value for a given model, the program will subset from the important\_Y dataset until it can make a model with an r-square at or exceeding the minimum. Y values at the end of the run will be removed first. The minimum r-squared value can be set at 1, requiring a perfect fit. 
+
+For data points not used, this same approach is repeated until a model is found with an appropriate r-squared. This means that any given run can have anywhere from 1 to *n*-1 models representing the drift behavior, where *n* is the number of IPC-500 samples. As *n* is not constant from run to run, the max number of regressions necessary in a given run is also variable. The next segment of code simply makes names for variables representing the group of important Y values and their corresponding linear models (group1, lm1; group2, lm2; ...; group(n-1), lm(n-1)).
 
 ``` r
 # The following is just making variable names for the drift correction regressions
@@ -94,7 +100,9 @@ for (i in 1:(nrow(important_Y)-1)){
 }
 ```
 
-The following does the process described above takes place in the code below. The `get()` function is used to call objects that can have different names. For instance, the current slope can be `m1`, `m2`, ..., `m(n-1)` depending on which regression it corresponds with. The names of the equations of the regressions are stored in `functions_list` with the corresponding sample numbers that they cover (`y1` covers 1-20, `y2` covers 21-45).
+The following does the process described above takes place in the code below. The `get()` function is used to call objects that can have different names. For instance, the current slope can be `m1`, `m2`, ..., `m(n-1)` depending on which regression it corresponds with. 
+
+The names of the equations of the regressions are stored in `functions_list` with the corresponding sample numbers that they cover (`y1` covers 1-20, `y2` covers 21-45).
 
 ``` r
 # Getting linear models for the drift corrections
@@ -417,9 +425,12 @@ for (i in names(CCBQ)){
   }
 }
 # Final output for QA/QC
+QA_QC_final <- rbind(QA_QC_final, IPC = IPC_tot, LFM = LFM_tot, CCB = CCB_tot)
 ```
 
-QA\_QC\_final &lt;- rbind(QA\_QC\_final, IPC = IPC\_tot, LFM = LFM\_tot, CCB = CCB\_tot) \#\# The Analysis Time for the actual analysis. The goal is to see if the concentration of analyte found in water samples is significantly greater than the background foams themselves, accounting for the weight of foams. If so, the concentrations of these samples will reported. First, we read in the weights of the desired foams from an Excel file and change the format of the sample name to match the data already in use.
+The Analysis 
+-----
+Time for the actual analysis. The goal is to see if the concentration of analyte found in water samples is significantly greater than the background foams themselves, accounting for the weight of foams. If so, the concentrations of these samples will reported. First, we read in the weights of the desired foams from an Excel file and change the format of the sample name to match the data already in use.
 
 ``` r
 weights_df <- read_excel(weights)
@@ -498,7 +509,9 @@ bg2_norm <- bg2_conc/bg2_weights$`Bhalfweight(g)`
 bg3_norm <- bg3_conc/bg3_weights$`Bhalfweight(g)`
 ```
 
-For any given sample, each analyte concentration mean has to compared to background foam concentration mean in an independent samples 1-tailed t-test, where we are testing the hypothesis that the mean concentration in the sample is greater than the mean concentration in the background foam. The custom function `sig_test()` lets you run all of the necessary t-tests for each analyte and returns each p-value in a vector. If a sample only has one replicate, a t-test will not work, and a p-value of 1 will be returned. Its input `sample_df` is a subset of the weight-normalized sample concentrations dataframe only containing one sample, and `background_df` is the corresponding weight-normalized background concentrations.
+For any given sample, each analyte concentration mean has to compared to background foam concentration mean in an independent samples 1-tailed t-test, where we are testing the hypothesis that the mean concentration in the sample is greater than the mean concentration in the background foam. The custom function `sig_test()` lets you run all of the necessary t-tests for each analyte and returns each p-value in a vector. If a sample only has one replicate, a t-test will not work, and a p-value of 1 will be returned. 
+
+Its input `sample_df` is a subset of the weight-normalized sample concentrations dataframe only containing one sample, and `background_df` is the corresponding weight-normalized background concentrations.
 
 ``` r
 # Defines a function to compare values
@@ -515,7 +528,9 @@ sig_test <- function(sample_df, background_df) {
 }
 ```
 
-This next custom function `final_label()` decides how to display each analyte in the final spreadsheet. An analyte can one of the following categories: "NotSignificant" (not significantly greater than the background foam concentration, alpha = 0.05), "Non-detect" (concentration less than or equal to MDL), "Present" (greater than MDL but less than or equal to PQL,LOQ,MRL), and actually displaying the concentration (greater than PQL,LOQ,MRL). The inputs to this function are simply vectors containing booleans (TRUE or FALSE) stating whether or not the stated label applies to a particular analyte, and the final concentrations (`final_conc`) for a given sample.
+This next custom function `final_label()` decides how to display each analyte in the final spreadsheet. An analyte can one of the following categories: "NotSignificant" (not significantly greater than the background foam concentration, alpha = 0.05), "Non-detect" (concentration less than or equal to MDL), "Present" (greater than MDL but less than or equal to PQL,LOQ,MRL), and actually displaying the concentration (greater than PQL,LOQ,MRL). 
+
+The inputs to this function are simply vectors containing booleans (TRUE or FALSE) stating whether or not the stated label applies to a particular analyte, and the final concentrations (`final_conc`) for a given sample.
 
 ``` r
 # How to label each analyte of each sample for the final main spreadsheet
@@ -536,7 +551,9 @@ final_label <- function(signif_v, nondetect, only_detect, give_value, final_conc
 }
 ```
 
-Here's where those functions get put to use: in a monster for-loop. Subsets are made only containing a single sample from the `sample_norm` (weight-normalized) and `sample-df` (non-normalized concentrations) dataframes. The non-normalized concentrations (`conc_mean`) are used to determine the labeling discussed above via boolean vectors, besides the significance vector. The background foam values compared to depend on the sample number, as described above. The non-normalized background concentration mean is then subtracted from the sample mean. This can be negative if sample concentration mean is lower than the background concentration. The ratio of A side of the foam's weight to the total foam weight is then incorporated to find the final concentration. The error propagation takes into account each of these. Matrices are then constructed to build toward the sheets in the final Excel spreadsheet. Matrices are easier at this point to deal with than dataframes.
+Here's where those functions get put to use: in a monster for-loop. Subsets are made only containing a single sample from the `sample_norm` (weight-normalized) and `sample-df` (non-normalized concentrations) dataframes. The non-normalized concentrations (`conc_mean`) are used to determine the labeling discussed above via boolean vectors, besides the significance vector. The background foam values compared to depend on the sample number, as described above. 
+
+The non-normalized background concentration mean is then subtracted from the sample mean. This can be negative if sample concentration mean is lower than the background concentration. The ratio of A side of the foam's weight to the total foam weight is then incorporated to find the final concentration. The error propagation takes into account each of these. Matrices are then constructed to build toward the sheets in the final Excel spreadsheet. Matrices are easier at this point to deal with than dataframes.
 
 ``` r
 for (i in 1:length(sample_list)) {
