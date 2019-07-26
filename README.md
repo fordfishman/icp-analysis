@@ -8,6 +8,12 @@ Introduction
 
 This document was written with the purpose of explaining the code used in the following app in relatively simple terms: <https://fordfishman.shinyapps.io/IPC-analysis-app/>.
 
+**geology.R** is the "standalone" script. If you change the file names as defined near the top of the script with each run, it can do the whole analysis on its own. I typically use it to look for bugs or to see how/if an input file is formatted incorrectly.
+
+**IPC-analysis-app** contains the structure of the actual app. 
+
+Note that some knowledge of R will be necessary to understand much of this. 
+
 Setup
 -----
 
