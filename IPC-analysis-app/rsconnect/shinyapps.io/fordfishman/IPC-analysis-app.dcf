@@ -1,0 +1,12 @@
+name: IPC-analysis-app
+title: IPC-analysis-app
+username:
+account: fordfishman
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 872572
+bundleId: 2255800
+url: https://fordfishman.shinyapps.io/IPC-analysis-app/
+when: 1563824312.16178
+asMultiple: FALSE
+asStatic: FALSE
